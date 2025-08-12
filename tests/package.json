@@ -1,0 +1,17 @@
+{
+  "name": "lugx-gaming-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "jest",
+    "test:integration": "jest --config jest.integration.config.js"
+  },
+  "dependencies": {
+    "jest": "^29.7.0",
+    "node-fetch": "^3.3.2",
+    "supertest": "^6.3.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.5",
+    "jest-junit": "^16.0.0"
+  }
+}

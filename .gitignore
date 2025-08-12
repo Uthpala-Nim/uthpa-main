@@ -1,0 +1,315 @@
+# Lugx Gaming Platform - .gitignore
+
+# ===================================
+# Node.js Dependencies and Modules
+# ===================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ===================================
+# Package Manager Files
+# ===================================
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
+
+# ===================================
+# Environment Variables and Config
+# ===================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ===================================
+# Runtime and Process Files
+# ===================================
+*.pid
+*.seed
+*.pid.lock
+
+# ===================================
+# Coverage and Testing
+# ===================================
+lib-cov/
+coverage/
+nyc_output/
+.nyc_output/
+.coverage
+.pytest_cache/
+*.cover
+.hypothesis/
+
+# ===================================
+# Build Outputs and Dist
+# ===================================
+build/
+dist/
+out/
+.next/
+.nuxt/
+.vuepress/dist
+
+# ===================================
+# Dependency Directories
+# ===================================
+jspm_packages/
+web_modules/
+
+# ===================================
+# TypeScript
+# ===================================
+*.tsbuildinfo
+.tscache/
+
+# ===================================
+# Python Files
+# ===================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ===================================
+# Virtual Environments (Python)
+# ===================================
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ===================================
+# IDE and Editor Files
+# ===================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ===================================
+# Operating System Files
+# ===================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===================================
+# Logs and Temporary Files
+# ===================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pids/
+*.pid
+*.seed
+*.pid.lock
+lib-cov/
+coverage/
+.grunt/
+.nyc_output/
+.cache/
+.parcel-cache/
+.tmp/
+tmp/
+temp/
+
+# ===================================
+# Docker Files (keep Dockerfiles, ignore runtime)
+# ===================================
+.dockerignore
+docker-compose.override.yml
+.docker/
+
+# ===================================
+# Database Files
+# ===================================
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# ===================================
+# Compiled Binary Files
+# ===================================
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# ===================================
+# Archive Files
+# ===================================
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# ===================================
+# Project Specific
+# ===================================
+# Temporary package.json files
+package.json.tmp
+
+# Local configuration overrides
+config.local.js
+services-config.local.js
+
+# Runtime data and sessions
+data/
+sessions/
+uploads/
+
+# Local development certificates
+*.pem
+*.key
+*.crt
+
+# ===================================
+# Kubernetes and Deployment
+# ===================================
+# Keep k8s configs but ignore local overrides
+k8s/**/secrets.yaml
+k8s/**/configmap-local.yaml
+
+# ===================================
+# Frontend Specific
+# ===================================
+# Compiled CSS (if using preprocessors)
+*.css.map
+
+# Static file cache
+.cache/
+public/static/
+
+# ===================================
+# Documentation Build
+# ===================================
+docs/_build/
+site/
+
+# ===================================
+# Backup Files
+# ===================================
+*.bak
+*.backup
+*.old
+*.orig
+
+# ===================================
+# Service Specific Ignores
+# ===================================
+# Analytics service data
+analytics-data/
+events.json
+
+# Game service uploads
+game-images/
+game-assets/
+
+# Order service receipts
+receipts/
+invoices/
+
+# ===================================
+# CI/CD and Deployment
+# ===================================
+.github/secrets/
+.gitlab-ci-local/
+.deployment/
+deployment-config.local.yml
+
+# ===================================
+# Monitoring and Profiling
+# ===================================
+.clinic/
+flamegraph.html
+*.cpuprofile
+*.heapsnapshot
+
+# ===================================
+# Security and Sensitive Data
+# ===================================
+# API keys and secrets
+.secrets
+secrets.json
+api-keys.json
+
+# SSL certificates
+ssl/
+certs/
+
+# JWT signing keys
+jwt-private.key
+jwt-public.key

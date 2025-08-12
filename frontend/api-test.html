@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test Dashboard</title>
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .service-status { margin: 10px 0; }
+        .status-ok { color: green; }
+        .status-error { color: red; }
+        .result-box { 
+            background: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gaming Platform API Test Dashboard</h1>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <h3>Service Status</h3>
+                <div id="service-status">
+                    <div class="service-status">Analytics Service: <span id="analytics-status">Testing...</span></div>
+                    <div class="service-status">Game Service: <span id="game-status">Testing...</span></div>
+                    <div class="service-status">Order Service: <span id="order-status">Testing...</span></div>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <h3>API Tests</h3>
+                
+                <div class="mb-3">
+                    <button class="btn btn-primary" onclick="testCreateGame()">Create Sample Game</button>
+                    <button class="btn btn-info" onclick="testGetGames()">Get All Games</button>
+                    <button class="btn btn-success" onclick="testCreateOrder()">Create Test Order</button>
+                    <button class="btn btn-warning" onclick="testTrackEvent()">Track Test Event</button>
+                </div>
+                
+                <div id="results" class="result-box">
+                    <h5>Results will appear here...</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api-service.js"></script>
+    
+    <script>
+        // Test service connections on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            testServiceConnections();
+        });
+        
+        async function testServiceConnections() {
+            console.log('Testing service connections...');
+            
+            // Test Analytics Service
+            try {
+                const response = await fetch(`${CONFIG.ANALYTICS_SERVICE_URL}/health`);
+                document.getElementById('analytics-status').innerHTML = 
+                    response.ok ? '<span class="status-ok">✓ Connected</span>' : '<span class="status-error">✗ Failed</span>';
+            } catch (error) {
+                document.getElementById('analytics-status').innerHTML = '<span class="status-error">✗ Failed</span>';
+            }
+            
+            // Test Game Service
+            try {
+                const response = await fetch(`${CONFIG.GAME_SERVICE_URL}/health`);
+                document.getElementById('game-status').innerHTML = 
+                    response.ok ? '<span class="status-ok">✓ Connected</span>' : '<span class="status-error">✗ Failed</span>';
+            } catch (error) {
+                document.getElementById('game-status').innerHTML = '<span class="status-error">✗ Failed</span>';
+            }
+            
+            // Test Order Service
+            try {
+                const response = await fetch(`${CONFIG.ORDER_SERVICE_URL}/health`);
+                document.getElementById('order-status').innerHTML = 
+                    response.ok ? '<span class="status-ok">✓ Connected</span>' : '<span class="status-error">✗ Failed</span>';
+            } catch (error) {
+                document.getElementById('order-status').innerHTML = '<span class="status-error">✗ Failed</span>';
+            }
+        }
+        
+        function updateResults(title, data) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <h5>${title}</h5>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        }
+        
+        async function testCreateGame() {
+            const gameData = {
+                name: "Test Game " + Date.now(),
+                category: "Action",
+                released_at: "2024-01-01",
+                price: 49.99
+            };
+            
+            try {
+                const result = await createGame(gameData);
+                updateResults('Create Game Result', result);
+            } catch (error) {
+                updateResults('Create Game Error', error.message);
+            }
+        }
+        
+        async function testGetGames() {
+            try {
+                const games = await getGames();
+                updateResults('All Games', games);
+            } catch (error) {
+                updateResults('Get Games Error', error.message);
+            }
+        }
+        
+        async function testCreateOrder() {
+            const orderData = {
+                items: [
+                    { name: "Test Game", price: 49.99 },
+                    { name: "Another Game", price: 29.99 }
+                ]
+            };
+            
+            try {
+                const result = await createOrder(orderData);
+                updateResults('Create Order Result', result);
+            } catch (error) {
+                updateResults('Create Order Error', error.message);
+            }
+        }
+        
+        async function testTrackEvent() {
+            const eventData = {
+                session_id: "test-session-" + Date.now(),
+                event: "test_event",
+                path: "/api-test.html",
+                value: "test_value"
+            };
+            
+            try {
+                const result = await trackEvent(eventData);
+                const events = await getAnalytics();
+                updateResults('Track Event Result', { success: result, recent_events: events });
+            } catch (error) {
+                updateResults('Track Event Error', error.message);
+            }
+        }
+    </script>
+</body>
+</html>

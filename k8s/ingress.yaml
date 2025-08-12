@@ -1,0 +1,39 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: app.localtest.me
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-svc
+            port:
+              number: 80              # <-- Service port, not containerPort
+      - path: /api/games
+        pathType: Prefix
+        backend:
+          service:
+            name: game-service-svc
+            port:
+              number: 3000            # <-- use the Service port for games
+      - path: /api/orders
+        pathType: Prefix
+        backend:
+          service:
+            name: order-service-svc
+            port:
+              number: 3000            # <-- Service port for orders
+      - path: /api/analytics
+        pathType: Prefix
+        backend:
+          service:
+            name: analytics-service-svc
+            port:
+              number: 3000            # <-- adjust to your Service port

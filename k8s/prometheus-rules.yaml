@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: monitoring
+data:
+  service_rules.yml: |
+    groups:
+      - name: service.rules
+        rules:
+          - record: service:request_latency_seconds:mean5m
+            expr: |
+              rate(http_request_duration_seconds_sum[5m]) /
+              rate(http_request_duration_seconds_count[5m])
+          
+          - record: service:request_rate:5m
+            expr: rate(http_requests_total[5m])
+          
+          - record: service:error_rate:5m
+            expr: |
+              rate(http_requests_total{status=~"5.*"}[5m]) /
+              rate(http_requests_total[5m])
+
+  alert_rules.yml: |
+    groups:
+      - name: service.alerts
+        rules:
+          - alert: HighErrorRate
+            expr: service:error_rate:5m > 0.1
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: High error rate detected
+              description: Service {{ $labels.service }} has error rate above 10% ({{ $value }})
+
+          - alert: HighLatency
+            expr: service:request_latency_seconds:mean5m > 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: High latency detected
+              description: Service {{ $labels.service }} has latency above 1s ({{ $value }})
+
+          - alert: ServiceDown
+            expr: up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: Service is down
+              description: Service {{ $labels.job }} has been down for more than 1 minute
+
+      - name: node.alerts
+        rules:
+          - alert: HighCPUUsage
+            expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: High CPU usage detected
+              description: Node {{ $labels.instance }} has CPU usage above 80% ({{ $value }}%)
+
+          - alert: HighMemoryUsage
+            expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: High memory usage detected
+              description: Node {{ $labels.instance }} has memory usage above 85% ({{ $value }}%)

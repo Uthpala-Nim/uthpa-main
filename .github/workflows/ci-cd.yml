@@ -1,0 +1,161 @@
+name: Lugx Gaming CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 */6 * * *'  # Run integration tests every 6 hours
+
+env:
+  REGISTRY: ghcr.io
+  KUBERNETES_CLUSTER: lugx-gaming-cluster
+  KUBERNETES_NAMESPACE: default
+  AWS_REGION: us-east-1
+
+jobs:
+  validate-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required secrets
+        run: |
+          missing_secrets=()
+          
+          # Check AWS secrets
+          [[ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]] && missing_secrets+=("AWS_ACCESS_KEY_ID")
+          [[ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]] && missing_secrets+=("AWS_SECRET_ACCESS_KEY")
+          [[ -z "${{ secrets.AWS_ACCOUNT_ID }}" ]] && missing_secrets+=("AWS_ACCOUNT_ID")
+          
+          # Check Kubernetes secrets
+          [[ -z "${{ secrets.KUBE_CONFIG }}" ]] && missing_secrets+=("KUBE_CONFIG")
+          
+          # Check notification secrets
+          [[ -z "${{ secrets.SLACK_WEBHOOK_URL }}" ]] && missing_secrets+=("SLACK_WEBHOOK_URL")
+          
+          if [ ${#missing_secrets[@]} -ne 0 ]; then
+            echo "Error: Missing required secrets: ${missing_secrets[*]}"
+            echo "Please set up these secrets in your repository settings:"
+            echo "1. Go to repository Settings"
+            echo "2. Click Secrets and variables > Actions"
+            echo "3. Add each missing secret"
+            exit 1
+          fi
+          
+          echo "All required secrets are configured correctly"
+  build-and-test:
+    needs: validate-secrets
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [frontend, analytics-service, game-service, order-service]
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: npm ci
+        
+      - name: Run unit tests
+        working-directory: services/${{ matrix.service }}
+        run: npm test
+        
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:latest \
+            ./${{ matrix.service }}
+            
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:latest
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        
+      - name: Set Kubernetes context
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+          
+      - name: Update deployment images
+        run: |
+          for service in frontend analytics-service game-service order-service; do
+            # Update image in deployment
+            kubectl set image deployment/$service $service=${{ env.REGISTRY }}/${{ github.repository }}/$service:${{ github.sha }} \
+              --record -n ${{ env.KUBERNETES_NAMESPACE }}
+              
+            # Wait for rollout to complete
+            kubectl rollout status deployment/$service -n ${{ env.KUBERNETES_NAMESPACE }} --timeout=300s
+          done
+
+  integration-tests:
+    needs: deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm ci
+        
+      - name: Run integration tests
+        working-directory: tests
+        run: npm run test:integration
+        env:
+          BASE_URL: https://lugx-gaming.example.com  # Replace with your actual domain
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Integration Tests Failed',
+              body: 'Integration tests failed in workflow run: ' + 
+                    'https://github.com/' + context.repo.owner + '/' + 
+                    context.repo.repo + '/actions/runs/' + context.runId
+            });
+            
+      - name: Send Slack notification
+        if: failure()
+        uses: act10ns/slack@v2
+        with:
+          status: ${{ job.status }}
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          message: Integration tests failed in workflow run {{ github.server_url }}/{{ github.repository }}/actions/runs/{{ github.run_id }}

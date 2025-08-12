@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: 
+      context: ./frontend
+    ports:
+      - "8081:80"
+    networks:
+      - app-network
+    depends_on:
+      - analytics-service
+      - game-service
+      - order-service
+      
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: gamestore
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+    ports:
+      - "3005:3000"
+    environment:
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}
+      - QUICKSIGHT_USER=${QUICKSIGHT_USER}
+      - CLICKHOUSE_HOST=http://clickhouse:8123
+    networks:
+      - app-network
+
+  game-service:
+    build:
+      context: ./services/game-service
+    ports:
+      - "3006:3000"
+    networks:
+      - app-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  order-service:
+    build:
+      context: ./services/order-service
+    ports:
+      - "3007:3000"
+    networks:
+      - app-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
